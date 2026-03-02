@@ -1,6 +1,12 @@
-require("dotenv").config();   // 👈 load .env
+require("dotenv").config(); // load .env
 
+const express = require("express");
 const mysql = require("mysql2/promise");
+
+const app = express();
+
+// Cloud Run requires PORT env (default 8080)
+const PORT = process.env.PORT || 8080;
 
 const dbConfig = {
   host: process.env.DB_HOST,
@@ -9,20 +15,30 @@ const dbConfig = {
   database: process.env.DB_NAME,
   port: process.env.DB_PORT || 3306,
 };
-console.log("test=",process.env.test)
+
+// ---- DB CONNECTION TEST ----
 async function connectDB() {
   try {
     const connection = await mysql.createConnection(dbConfig);
     console.log("✅ Connected to MySQL");
 
-    // Optional test query
     await connection.query("SELECT 1");
-
     await connection.end();
   } catch (error) {
     console.error("❌ Database connection failed:", error.message);
-    process.exit(1);
+    // Do NOT exit in Cloud Run; let container stay alive
   }
 }
 
+// Call DB test once at startup
 connectDB();
+
+// ---- ROUTES ----
+app.get("/", (req, res) => {
+  res.status(200).send("Hello World 🚀");
+});
+
+// ---- START SERVER ----
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
